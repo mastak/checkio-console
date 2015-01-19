@@ -87,13 +87,27 @@ class DockerClient():
         http_client.fetch(request, handle_request)
 
     def build_mission_image(self, path):
-        with tempfile.TemporaryDirectory() as tmp_dir:
+        try:
+            tmp_dir = tempfile.mkdtemp()
+            print(tmp_dir)
+
             mission_source = MissionFilesHandler(self.environment, path, tmp_dir)
             mission_source.schema_parse()
             mission_source.pull_base()
             mission_source.copy_user_files()
             mission_source.make_dockerfile()
             self._build(name=self.name_image, path=mission_source.path_destination_source)
+        finally:
+            # Clean up the directory yourself
+            os.removedirs(tmp_dir)
+
+        # with tempfile.TemporaryDirectory() as tmp_dir:
+        #     mission_source = MissionFilesHandler(self.environment, path, tmp_dir)
+        #     mission_source.schema_parse()
+        #     mission_source.pull_base()
+        #     mission_source.copy_user_files()
+        #     mission_source.make_dockerfile()
+        #     self._build(name=self.name_image, path=mission_source.path_destination_source)
 
     def _build(self, name, path=None, dockerfile_content=None):
         fileobj = None
