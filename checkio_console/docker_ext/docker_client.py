@@ -7,6 +7,7 @@ import tempfile
 
 from io import BytesIO
 
+from past.builtins import basestring
 from docker import Client
 from docker.utils import kwargs_from_env
 
@@ -125,7 +126,8 @@ class DockerClient():
         line_str = line.decode().strip()
         data = json.loads(line_str)
         for key, value in data.items():
-            value = value.strip()
+            if isinstance(value, basestring):
+                value = value.strip()
             if not value:
                 return None
             return "{}: {}".format(key, value)
