@@ -2,6 +2,7 @@ import os
 import json
 import logging
 import socket
+import shutil
 import tempfile
 
 from io import BytesIO
@@ -90,6 +91,7 @@ class DockerClient():
         try:
             tmp_dir = tempfile.mkdtemp()
             print(tmp_dir)
+            os.chmod(path, 0o777) # for example
 
             mission_source = MissionFilesHandler(self.environment, path, tmp_dir)
             mission_source.schema_parse()
@@ -98,8 +100,7 @@ class DockerClient():
             mission_source.make_dockerfile()
             self._build(name=self.name_image, path=mission_source.path_destination_source)
         finally:
-            # Clean up the directory yourself
-            os.removedirs(tmp_dir)
+            shutil.rmtree(tmp_dir)
 
         # with tempfile.TemporaryDirectory() as tmp_dir:
         #     mission_source = MissionFilesHandler(self.environment, path, tmp_dir)
