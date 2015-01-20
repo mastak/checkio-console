@@ -119,14 +119,16 @@ class DockerClient():
         for line in self._client.build(path=path, fileobj=fileobj, tag=name, nocache=True):
             line = self._format_ouput_line(line)
             if line is not None:
-                print(line)
+                logging.info(line)
 
     def _format_ouput_line(self, line):
         line_str = line.decode().strip()
-        value = json.loads(line_str)['stream'].strip()
-        if not value:
-            return None
-        return value
+        data = json.loads(line_str)
+        for key, value in data.items():
+            value = value.strip()
+            if not value:
+                return None
+            return "{}: {}".format(key, value)
 
 
 def thread_runner(io_loop, mission, environment, path=None):
