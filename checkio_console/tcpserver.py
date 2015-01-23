@@ -15,7 +15,7 @@ class ClientDataInterface(object):
 
 class TCPConsoleServer(TCPServer):
 
-    PORT = 7875
+    PORT = 7878
 
     data_interface = ClientDataInterface
 
@@ -67,6 +67,7 @@ class StreamReader(object):
 
 def thread_runner(io_loop=None):
     server = TCPConsoleServer(io_loop=io_loop)
+    logging.info("Running tcp server")
     server.listen(TCPConsoleServer.PORT)
 
     if io_loop is None:

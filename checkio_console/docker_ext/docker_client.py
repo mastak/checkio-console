@@ -39,6 +39,7 @@ class DockerClient():
     def create_container(self):
         local_ip = socket.gethostbyname(socket.gethostname())
         command = "{} {}".format(local_ip, TCPConsoleServer.PORT)
+        logging.info("Docker args: {}".format(command))
         self._container = self._client.create_container(
             image=self.name_image,
             command=command,
@@ -50,10 +51,13 @@ class DockerClient():
         self._client.start(container=self._container.get('Id'))
 
     def stop(self):
-        self._client.stop(container=self._container.get('Id'))
+        self._client.stop(container=self._container.get('Id'), timeout=2)
+
+    def remove_container(self):
+        self._client.remove_container(container=self._container.get('Id'))
 
     def logs(self, stream=False, logs=False):
-        return self._client.attach(container=self.container_id, stream=True, logs=logs)
+        return self._client.attach(container=self.container_id, stream=stream, logs=logs)
 
     @property
     def container_id(self):
@@ -89,11 +93,9 @@ class DockerClient():
         http_client.fetch(request, handle_request)
 
     def build_mission_image(self, path):
+        tmp_dir = None
         try:
             tmp_dir = tempfile.mkdtemp()
-            print(tmp_dir)
-            os.chmod(path, 0o777) # for example
-
             mission_source = MissionFilesHandler(self.environment, path, tmp_dir)
             mission_source.schema_parse()
             mission_source.pull_base()
@@ -101,15 +103,8 @@ class DockerClient():
             mission_source.make_dockerfile()
             self._build(name=self.name_image, path=mission_source.path_destination_source)
         finally:
-            shutil.rmtree(tmp_dir)
-
-        # with tempfile.TemporaryDirectory() as tmp_dir:
-        #     mission_source = MissionFilesHandler(self.environment, path, tmp_dir)
-        #     mission_source.schema_parse()
-        #     mission_source.pull_base()
-        #     mission_source.copy_user_files()
-        #     mission_source.make_dockerfile()
-        #     self._build(name=self.name_image, path=mission_source.path_destination_source)
+            if tmp_dir is not None:
+                shutil.rmtree(tmp_dir)
 
     def _build(self, name, path=None, dockerfile_content=None):
         fileobj = None
@@ -126,6 +121,7 @@ class DockerClient():
         line_str = line.decode().strip()
         data = json.loads(line_str)
         for key, value in data.items():
+            # TODO: if any error - raise exception
             if isinstance(value, basestring):
                 value = value.strip()
             if not value:
@@ -134,6 +130,7 @@ class DockerClient():
 
 
 def thread_runner(io_loop, mission, environment, path=None):
+    global docker
     docker = DockerClient(mission, environment)
     if path:
         docker.build_mission_image(path)
@@ -141,11 +138,18 @@ def thread_runner(io_loop, mission, environment, path=None):
     logging.info('Run docker:')
     docker.run()
 
-    def handle_streaming(data):
-        logging.info(data.decode())
+    # def handle_streaming(data):
+    #     logging.info(data.decode())
+    # docker.async_logs(io_loop=io_loop, streaming_callback=handle_streaming)
 
-    docker.async_logs(io_loop=io_loop, streaming_callback=handle_streaming)
 
-    if io_loop is None:
-        IOLoop.instance().start()
 
+    # for line in docker.logs(stream=True, logs=True):
+    #     logging.info(line)
+
+
+
+    #
+    # if io_loop is None:
+    #     IOLoop.instance().start()
+docker = None

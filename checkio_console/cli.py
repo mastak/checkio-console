@@ -8,6 +8,9 @@
 :py:mod:`checkio_console.cli` - Command line interface for CheckiO
 ==============================================================================
 """
+import sys
+sys.path.append('/Users/igorlubimov/sites/code_empyre/client-console/')
+
 
 import signal
 import argparse
@@ -37,6 +40,9 @@ def main():
     """The command line interface for the ``checkio`` program."""
     def exit_signal(sig, frame):
         logging.info("Trying exit")
+        from checkio_console.docker_ext.docker_client import docker
+        docker.stop()
+        docker.remove_container()
         io_loop.add_callback(IOLoop.instance().stop)
         exit_event.set()
 
@@ -52,12 +58,13 @@ def main():
 
     io_loop = IOLoop.instance()
     thread_tcpserver = Thread(target=tcpserver.thread_runner, args=(io_loop,))
+    thread_tcpserver.start()
 
     args_docker = (io_loop, options.mission, options.environment, options.path)
-    thread_docker = Thread(target=docker_client.thread_runner, args=args_docker)
+    # thread_docker = Thread(target=docker_client.thread_runner, args=args_docker)
+    # thread_docker.start()
+    docker_client.thread_runner(*args_docker)
 
-    thread_tcpserver.start()
-    thread_docker.start()
     io_loop.start()
 
 
