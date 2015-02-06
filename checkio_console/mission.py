@@ -14,6 +14,8 @@ class MissionFilesHandler(object):
     DOCKER_TEMPLATE_FILENAME = 'Dockertemplate'
     DOCKER_ENV_FILENAME = 'Dockerenv'
 
+    RUNNER_FILENAME = 'run.sh'
+
     def __init__(self, env, path, tmp_dir):
         self.env = env
         self.path = path
@@ -21,6 +23,8 @@ class MissionFilesHandler(object):
         self.config_base_repository = None
         self.path_destination = os.path.join(tmp_dir, 'checkio_mission')
         self.path_destination_source = os.path.join(self.path_destination, self.DIR_SOURCE)
+        self.filepath_destination_runner = os.path.join(self.path_destination_source, 'envs',
+                                                        self.RUNNER_FILENAME)
 
     def schema_parse(self):
         schema_file = os.path.join(self.path, self.DIR_SOURCE, self.SCHEMA_FILENAME)
@@ -46,6 +50,12 @@ class MissionFilesHandler(object):
 
     def copy_user_files(self):
         copy_tree(self.path, self.path_destination)
+
+    def make_env_runner(self):
+        runner_template = self._get_file_content(self.filepath_destination_runner)
+        runner_template = runner_template.replace('{{env}}', self.env)
+        with open(self.filepath_destination_runner, 'w') as f:
+            f.write(runner_template)
 
     def make_dockerfile(self):
         docker_template_file = os.path.join(self.path_destination_source,

@@ -8,9 +8,6 @@
 :py:mod:`checkio_console.cli` - Command line interface for CheckiO
 ==============================================================================
 """
-import sys
-sys.path.append('/Users/igorlubimov/sites/code_empyre/client-console/')
-
 
 import signal
 import argparse
@@ -18,21 +15,21 @@ import logging
 import sys
 import textwrap
 import coloredlogs
-import threading
 from threading import Thread
 
 from tornado.ioloop import IOLoop
 
 from checkio_console import tcpserver
 from checkio_console.docker_ext import docker_client
+from checkio_console.docker_ext.docker_client import docker
 
-exit_event = threading.Event()
 logger = logging.getLogger(__name__)
 
 parser = argparse.ArgumentParser(description='Command line interface for CheckiO')
-parser.add_argument('-e', '--environment', help='Mission environment name')
+parser.add_argument('-e', '--environment', help='Mission environment name', required=False)
 parser.add_argument('-p', '--path', help='Mission files path for build image')
-parser.add_argument('-m', '--mission', help='Mission name', required=True)
+parser.add_argument('-m', '--mission', help='Mission name', required=False)
+parser.add_argument('-i', '--input-file', help='Input file this data for task', required=False)
 options = parser.parse_args()
 
 
@@ -40,11 +37,9 @@ def main():
     """The command line interface for the ``checkio`` program."""
     def exit_signal(sig, frame):
         logging.info("Trying exit")
-        from checkio_console.docker_ext.docker_client import docker
         docker.stop()
         docker.remove_container()
         io_loop.add_callback(IOLoop.instance().stop)
-        exit_event.set()
 
     signal.signal(signal.SIGINT, exit_signal)
     signal.signal(signal.SIGTERM, exit_signal)
@@ -57,13 +52,14 @@ def main():
     logging.info('Run...')
 
     io_loop = IOLoop.instance()
-    thread_tcpserver = Thread(target=tcpserver.thread_runner, args=(io_loop,))
-    thread_tcpserver.start()
-
-    args_docker = (io_loop, options.mission, options.environment, options.path)
-    # thread_docker = Thread(target=docker_client.thread_runner, args=args_docker)
-    # thread_docker.start()
-    docker_client.thread_runner(*args_docker)
+    if options.input_file:
+        thread_tcpserver = Thread(target=tcpserver.thread_start, args=(options.input_file, io_loop))
+        thread_tcpserver.start()
+    else:
+        if not options.mission or not options.environment or not options.path:
+            print('path, mission, and environment is required args')
+            sys.exit()
+        docker_client.start(options.mission, options.environment, options.path)
 
     io_loop.start()
 

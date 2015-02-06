@@ -1,5 +1,5 @@
 # Byte-compiled / optimized / DLL files
-__pycache__
+__pycache__/
 *.py[cod]
 
 # C extensions
@@ -52,3 +52,4 @@ docs/_build/
 
 # PyBuilder
 target/
+checkio_console/__pycache__/

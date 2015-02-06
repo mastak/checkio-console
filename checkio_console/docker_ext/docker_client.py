@@ -100,19 +100,20 @@ class DockerClient():
             mission_source.schema_parse()
             mission_source.pull_base()
             mission_source.copy_user_files()
+            mission_source.make_env_runner()
             mission_source.make_dockerfile()
-            self._build(name=self.name_image, path=mission_source.path_destination_source)
+            self._build(name_image=self.name_image, path=mission_source.path_destination_source)
         finally:
             if tmp_dir is not None:
                 shutil.rmtree(tmp_dir)
 
-    def _build(self, name, path=None, dockerfile_content=None):
+    def _build(self, name_image, path=None, dockerfile_content=None):
         fileobj = None
         if dockerfile_content is not None:
             fileobj = BytesIO(dockerfile_content.encode('utf-8'))
 
         logging.info("Before build")
-        for line in self._client.build(path=path, fileobj=fileobj, tag=name, nocache=True):
+        for line in self._client.build(path=path, fileobj=fileobj, tag=name_image, nocache=True):
             line = self._format_ouput_line(line)
             if line is not None:
                 logging.info(line)
@@ -129,7 +130,7 @@ class DockerClient():
             return "{}: {}".format(key, value)
 
 
-def thread_runner(io_loop, mission, environment, path=None):
+def start(mission, environment, path=None):
     global docker
     docker = DockerClient(mission, environment)
     if path:
@@ -142,14 +143,7 @@ def thread_runner(io_loop, mission, environment, path=None):
     #     logging.info(data.decode())
     # docker.async_logs(io_loop=io_loop, streaming_callback=handle_streaming)
 
+    for line in docker.logs(stream=True, logs=True):
+        logging.info(line)
 
-
-    # for line in docker.logs(stream=True, logs=True):
-    #     logging.info(line)
-
-
-
-    #
-    # if io_loop is None:
-    #     IOLoop.instance().start()
 docker = None
