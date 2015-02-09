@@ -9,6 +9,9 @@
 ==============================================================================
 """
 
+import sys
+sys.path.insert(0, '/Users/igorlubimov/sites/code_empyre/client-console')
+
 import signal
 import argparse
 import logging
@@ -56,7 +59,7 @@ def main():
         thread_tcpserver = Thread(target=tcpserver.thread_start, args=(options.input_file, io_loop))
         thread_tcpserver.start()
     else:
-        if not options.mission or not options.environment or not options.path:
+        if not options.mission or not options.environment:
             print('path, mission, and environment is required args')
             sys.exit()
         docker_client.start(options.mission, options.environment, options.path)

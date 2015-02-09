@@ -139,11 +139,10 @@ def start(mission, environment, path=None):
     logging.info('Run docker:')
     docker.run()
 
-    # def handle_streaming(data):
-    #     logging.info(data.decode())
-    # docker.async_logs(io_loop=io_loop, streaming_callback=handle_streaming)
-
     for line in docker.logs(stream=True, logs=True):
-        logging.info(line)
+        try:
+            logging.info(line)
+        except:
+            pass
 
 docker = None
